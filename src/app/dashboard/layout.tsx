@@ -1,8 +1,9 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { db, projects } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 export default async function DashboardLayout({
     children,
@@ -11,15 +12,16 @@ export default async function DashboardLayout({
     children: React.ReactNode;
     searchParams?: Promise<{ project?: string }>;
 }) {
-    const session = await auth();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
         redirect("/login");
     }
 
     // Get user's projects
     const userProjects = await db.query.projects.findMany({
-        where: eq(projects.userId, session.user.id),
+        where: eq(projects.userId, user.id),
         orderBy: (p, { desc }) => [desc(p.createdAt)],
     });
 
@@ -29,11 +31,12 @@ export default async function DashboardLayout({
     return (
         <div className="h-screen w-screen flex bg-linkedin-page-bg font-sans text-gray-900">
             <Sidebar
-                user={session.user}
+                user={{ name: user.user_metadata?.name, email: user.email }}
                 projects={userProjects}
                 activeProjectId={activeProjectId}
             />
             <main className="flex-1 relative overflow-hidden">{children}</main>
+            <FeedbackDialog />
         </div>
     );
 }

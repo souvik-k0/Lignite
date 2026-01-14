@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Flame, Mail, Lock, User, Loader2 } from "lucide-react";
@@ -30,19 +31,29 @@ export default function RegisterPage() {
 
         setIsLoading(true);
 
+        const supabase = createClient();
+
         try {
-            const res = await fetch("/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email, password }),
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        name: name,
+                    },
+                },
             });
 
-            const data = await res.json();
-
-            if (!res.ok) {
-                setError(data.error || "Registration failed");
+            if (error) {
+                setError(error.message);
             } else {
-                router.push("/login?registered=true");
+                // Check if email confirmation is required (default in Supabase)
+                if (data?.user && !data.session) {
+                    setError("Please check your email to confirm your account.");
+                } else {
+                    router.push("/dashboard");
+                    router.refresh();
+                }
             }
         } catch {
             setError("Something went wrong. Please try again.");

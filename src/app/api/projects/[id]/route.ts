@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { db, projects, researchTopics, generatedContent } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -9,8 +9,10 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -19,7 +21,7 @@ export async function DELETE(
         // Delete project (cascades to topics and content)
         await db
             .delete(projects)
-            .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)));
+            .where(and(eq(projects.id, id), eq(projects.userId, user.id)));
 
         return NextResponse.json({ message: "Project deleted" });
     } catch (error) {

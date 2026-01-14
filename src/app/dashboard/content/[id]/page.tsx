@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { db, generatedContent } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { FileText, Clock } from "lucide-react";
@@ -12,8 +12,9 @@ export default async function ContentPage({
 }: {
     params: Promise<{ id: string }>;
 }) {
-    const session = await auth();
-    if (!session?.user?.id) return null;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
 
     const { id } = await params;
 
@@ -21,7 +22,7 @@ export default async function ContentPage({
         where: eq(generatedContent.id, id),
     });
 
-    if (!content || content.userId !== session.user.id) {
+    if (!content || content.userId !== user.id) {
         notFound();
     }
 

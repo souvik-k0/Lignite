@@ -1,9 +1,11 @@
+import 'dotenv/config';
+
 /** @type {import("drizzle-kit").Config} */
 export default {
     schema: "./src/lib/db/schema.ts",
     out: "./drizzle",
-    dialect: "sqlite",
+    dialect: "postgresql",
     dbCredentials: {
-        url: "./lignite.db",
+        url: process.env.DATABASE_URL,
     },
 };

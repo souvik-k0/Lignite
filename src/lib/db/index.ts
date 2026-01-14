@@ -1,19 +1,12 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
-import path from "path";
 
-// Database file path - stored in project root
-const dbPath = path.join(process.cwd(), "lignite.db");
+const connectionString = process.env.DATABASE_URL!;
 
-// Create SQLite database connection
-const sqlite = new Database(dbPath);
-
-// Enable WAL mode for better performance
-sqlite.pragma("journal_mode = WAL");
-
-// Create Drizzle database instance with schema
-export const db = drizzle(sqlite, { schema });
+// Disable prefetch as it is not supported for "Transaction" pool mode
+const client = postgres(connectionString, { prepare: false });
+export const db = drizzle(client, { schema });
 
 // Export schema for use in queries
 export * from "./schema";

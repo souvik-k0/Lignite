@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { db, researchTopics, generatedContent, projects } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -11,8 +11,10 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -23,7 +25,7 @@ export async function PATCH(
         const topic = await db.query.researchTopics.findFirst({
             where: and(
                 eq(researchTopics.id, id),
-                eq(researchTopics.userId, session.user.id)
+                eq(researchTopics.userId, user.id)
             ),
         });
 
@@ -33,7 +35,7 @@ export async function PATCH(
 
         // Check rate limit before generating content
         if (shouldGenerate && status === "APPROVED") {
-            const { allowed, limit } = await canGenerate(session.user.id);
+            const { allowed, limit } = await canGenerate(user.id);
             if (!allowed) {
                 return NextResponse.json({
                     error: "Rate limit exceeded",
@@ -55,17 +57,17 @@ export async function PATCH(
                 where: eq(projects.id, topic.projectId),
             });
 
-            const content = await generateLinkedInPost(topic.topic, project?.name || "general");
+            const content = await generateLinkedInPost(topic.topic, project?.name || "general", user.id);
 
             // Increment usage count after successful API call
-            await incrementGenerate(session.user.id);
+            await incrementGenerate(user.id);
 
             await db.insert(generatedContent).values({
                 title: topic.topic,
                 content: content,
                 topicId: id,
                 projectId: topic.projectId,
-                userId: session.user.id,
+                userId: user.id,
             });
 
             await db
@@ -87,8 +89,10 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -96,7 +100,7 @@ export async function DELETE(
 
         await db
             .delete(researchTopics)
-            .where(and(eq(researchTopics.id, id), eq(researchTopics.userId, session.user.id)));
+            .where(and(eq(researchTopics.id, id), eq(researchTopics.userId, user.id)));
 
         return NextResponse.json({ success: true });
     } catch (error) {

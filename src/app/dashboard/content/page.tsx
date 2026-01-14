@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { db, generatedContent } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { FileText, Clock, FolderOpen, ChevronRight, Sparkles } from "lucide-react";
@@ -9,18 +9,19 @@ export default async function ContentListPage({
 }: {
     searchParams?: Promise<{ project?: string }>;
 }) {
-    const session = await auth();
-    if (!session?.user?.id) return null;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
 
     const params = await searchParams;
     const projectId = params?.project;
 
     const whereClause = projectId
         ? and(
-            eq(generatedContent.userId, session.user.id),
+            eq(generatedContent.userId, user.id),
             eq(generatedContent.projectId, projectId)
         )
-        : eq(generatedContent.userId, session.user.id);
+        : eq(generatedContent.userId, user.id);
 
     const contents = await db.query.generatedContent.findMany({
         where: whereClause,

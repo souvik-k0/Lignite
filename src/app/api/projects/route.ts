@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { db, projects } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -6,13 +6,15 @@ import { NextResponse } from "next/server";
 // GET - List all projects for user
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const userProjects = await db.query.projects.findMany({
-            where: eq(projects.userId, session.user.id),
+            where: eq(projects.userId, user.id),
             orderBy: (p, { desc }) => [desc(p.createdAt)],
         });
 
@@ -26,8 +28,10 @@ export async function GET() {
 // POST - Create new project
 export async function POST(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -40,7 +44,7 @@ export async function POST(req: Request) {
             .insert(projects)
             .values({
                 name: name.trim(),
-                userId: session.user.id,
+                userId: user.id,
             })
             .returning();
 

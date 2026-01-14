@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { Logger } from "./logger";
 
 // Use environment variable for API key
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
@@ -12,7 +13,7 @@ export interface ResearchResult {
 /**
  * Research trending topics using Gemini AI
  */
-export async function researchTrendingTopics(niche: string): Promise<ResearchResult[]> {
+export async function researchTrendingTopics(niche: string, userId?: string): Promise<ResearchResult[]> {
     const model = "gemini-2.0-flash-exp";
 
     const prompt = `
@@ -72,9 +73,16 @@ export async function researchTrendingTopics(niche: string): Promise<ResearchRes
             });
         }
 
+        // Log successful research
+        await Logger.info("USER_SEARCH", `Researched topics for niche: ${niche}`, {
+            topicCount: topics.length,
+            niche
+        }, userId);
+
         return topics.slice(0, 10);
     } catch (error) {
         console.error("Research error:", error);
+        await Logger.error("SYSTEM_ERROR", "Topic research failed", { niche, error: String(error) }, userId);
         return [];
     }
 }
@@ -83,7 +91,7 @@ export async function researchTrendingTopics(niche: string): Promise<ResearchRes
  * Generate LinkedIn post content using Gemini AI
  * Optimized for LinkedIn 2025 Algorithm
  */
-export async function generateLinkedInPost(topic: string, niche: string): Promise<string> {
+export async function generateLinkedInPost(topic: string, niche: string, userId?: string): Promise<string> {
     const model = "gemini-2.0-flash-exp";
 
     const prompt = `
@@ -136,9 +144,15 @@ Write the post now:
         });
 
         const candidate = response.candidates?.[0];
-        return candidate?.content?.parts?.[0]?.text || "Failed to generate content.";
+        const content = candidate?.content?.parts?.[0]?.text || "Failed to generate content.";
+
+        // Log generation
+        await Logger.info("GENERATE_POST", "Generated LinkedIn post", { topic, niche, contentLength: content.length }, userId);
+
+        return content;
     } catch (error) {
         console.error("Generation error:", error);
+        await Logger.error("SYSTEM_ERROR", "Post generation failed", { topic, error: String(error) }, userId);
         return "Error generating content. Please check your API key.";
     }
 }

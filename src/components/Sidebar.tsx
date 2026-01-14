@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { createClient } from "@/lib/supabase/client";
 import {
     Folder,
     FileSpreadsheet,
@@ -46,6 +46,13 @@ export default function Sidebar({ user, projects: initialProjects, activeProject
     }, [pathname]);
 
     const isActive = (path: string) => pathname === path;
+
+    const handleSignOut = async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        router.push("/login");
+        router.refresh();
+    };
 
     const handleCreateProject = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -249,7 +256,7 @@ export default function Sidebar({ user, projects: initialProjects, activeProject
                             </p>
                         </div>
                         <button
-                            onClick={() => signOut({ callbackUrl: "/login" })}
+                            onClick={handleSignOut}
                             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                             title="Sign out"
                         >

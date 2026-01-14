@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { db, researchTopics, projects } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -8,8 +8,10 @@ import { canResearch, incrementResearch } from "@/lib/rateLimit";
 // GET - List topics for a project
 export async function GET(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -23,7 +25,7 @@ export async function GET(req: Request) {
         const topics = await db.query.researchTopics.findMany({
             where: and(
                 eq(researchTopics.projectId, projectId),
-                eq(researchTopics.userId, session.user.id)
+                eq(researchTopics.userId, user.id)
             ),
             orderBy: (t, { desc }) => [desc(t.createdAt)],
         });
@@ -38,13 +40,15 @@ export async function GET(req: Request) {
 // POST - Research new topics for a project
 export async function POST(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         // Check rate limit
-        const { allowed, remaining, limit } = await canResearch(session.user.id);
+        const { allowed, remaining, limit } = await canResearch(user.id);
         if (!allowed) {
             return NextResponse.json({
                 error: "Rate limit exceeded",
@@ -62,7 +66,7 @@ export async function POST(req: Request) {
 
         // Get project name (used as niche for research)
         const project = await db.query.projects.findFirst({
-            where: and(eq(projects.id, projectId), eq(projects.userId, session.user.id)),
+            where: and(eq(projects.id, projectId), eq(projects.userId, user.id)),
         });
 
         if (!project) {
@@ -70,10 +74,10 @@ export async function POST(req: Request) {
         }
 
         // Research trending topics using Gemini
-        const topics = await researchTrendingTopics(project.name);
+        const topics = await researchTrendingTopics(project.name, user.id);
 
         // Increment usage count after successful API call
-        await incrementResearch(session.user.id);
+        await incrementResearch(user.id);
 
         // Handle case where no topics were found
         if (topics.length === 0) {
@@ -89,7 +93,7 @@ export async function POST(req: Request) {
                     sourceUrl: t.sourceUrl,
                     sourceTitle: t.sourceTitle,
                     projectId: projectId,
-                    userId: session.user.id,
+                    userId: user.id,
                 }))
             )
             .returning();

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { db, researchTopics, generatedContent, projects } from "@/lib/db";
 import { eq, count, desc, gte, and } from "drizzle-orm";
 import { Search, Activity, FolderOpen, ArrowRight, Sparkles, Clock, Zap } from "lucide-react";
@@ -6,12 +6,13 @@ import Link from "next/link";
 import { getUsageStats, RATE_LIMITS } from "@/lib/rateLimit";
 
 export default async function DashboardPage() {
-    const session = await auth();
-    if (!session?.user?.id) return null;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
 
     // Get user's projects with stats
     const userProjects = await db.query.projects.findMany({
-        where: eq(projects.userId, session.user.id),
+        where: eq(projects.userId, user.id),
         orderBy: (p, { desc }) => [desc(p.createdAt)],
     });
 
@@ -19,12 +20,12 @@ export default async function DashboardPage() {
     const [topicsCount] = await db
         .select({ count: count() })
         .from(researchTopics)
-        .where(eq(researchTopics.userId, session.user.id));
+        .where(eq(researchTopics.userId, user.id));
 
     const [contentCount] = await db
         .select({ count: count() })
         .from(generatedContent)
-        .where(eq(generatedContent.userId, session.user.id));
+        .where(eq(generatedContent.userId, user.id));
 
     // Get topics from last 30 days
     const thirtyDaysAgo = new Date();
@@ -32,14 +33,14 @@ export default async function DashboardPage() {
 
     const recentTopics = await db.query.researchTopics.findMany({
         where: and(
-            eq(researchTopics.userId, session.user.id),
+            eq(researchTopics.userId, user.id),
             gte(researchTopics.createdAt, thirtyDaysAgo)
         ),
         orderBy: (t, { desc }) => [desc(t.createdAt)],
     });
 
     // Get usage stats for today
-    const usageStats = await getUsageStats(session.user.id);
+    const usageStats = await getUsageStats(user.id);
 
     return (
         <div className="p-4 md:p-8 pt-16 md:pt-8 h-full bg-linkedin-page-bg overflow-y-auto">

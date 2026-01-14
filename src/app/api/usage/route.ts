@@ -1,16 +1,18 @@
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { getUsageStats } from "@/lib/rateLimit";
 import { NextResponse } from "next/server";
 
 // GET - Get user's current usage stats
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const stats = await getUsageStats(session.user.id);
+        const stats = await getUsageStats(user.id);
 
         return NextResponse.json(stats);
     } catch (error) {
