@@ -21,7 +21,7 @@ type LogActivity = {
     level: "INFO" | "WARN" | "ERROR";
     action: string;
     message: string;
-    details: string | null;
+    details: string | object | null;
     createdAt: string;
 };
 
@@ -214,8 +214,8 @@ export default function AdminDashboard() {
                 <button
                     onClick={() => setActiveTab("logs")}
                     className={`py-3 sm:py-4 px-4 sm:px-6 font-semibold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === "logs"
-                            ? "border-linkedin-charcoal text-linkedin-charcoal"
-                            : "border-transparent text-linkedin-gray hover:text-linkedin-charcoal"
+                        ? "border-linkedin-charcoal text-linkedin-charcoal"
+                        : "border-transparent text-linkedin-gray hover:text-linkedin-charcoal"
                         }`}
                 >
                     <Activity size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -227,8 +227,8 @@ export default function AdminDashboard() {
                 <button
                     onClick={() => setActiveTab("feedback")}
                     className={`py-3 sm:py-4 px-4 sm:px-6 font-semibold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === "feedback"
-                            ? "border-linkedin-charcoal text-linkedin-charcoal"
-                            : "border-transparent text-linkedin-gray hover:text-linkedin-charcoal"
+                        ? "border-linkedin-charcoal text-linkedin-charcoal"
+                        : "border-transparent text-linkedin-gray hover:text-linkedin-charcoal"
                         }`}
                 >
                     <MessageSquare size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -315,7 +315,9 @@ export default function AdminDashboard() {
                                                             <p className="text-sm text-linkedin-charcoal">{activity.message}</p>
                                                             {activity.details && (
                                                                 <pre className="mt-2 text-xs text-linkedin-gray bg-gray-50 p-2 rounded overflow-x-auto border">
-                                                                    {activity.details}
+                                                                    {typeof activity.details === 'object'
+                                                                        ? JSON.stringify(activity.details, null, 2)
+                                                                        : activity.details}
                                                                 </pre>
                                                             )}
                                                         </div>
