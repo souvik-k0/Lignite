@@ -185,25 +185,25 @@ export default function AdminDashboard() {
     return (
         <div className="min-h-screen flex flex-col bg-linkedin-page-bg font-sans">
             {/* Header */}
-            <header className="bg-white border-b border-linkedin-gray-light px-4 sm:px-8 py-4 sm:py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-sm">
+            <header className="bg-white border-b border-linkedin-gray-light px-4 sm:px-8 py-3 sm:py-5 flex flex-row justify-between items-center gap-3 shadow-sm">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-linkedin-charcoal">Developer Dashboard</h1>
-                    <p className="text-linkedin-gray text-xs sm:text-sm">System observability and feedback loop</p>
+                    <h1 className="text-lg sm:text-2xl font-bold text-linkedin-charcoal">Developer Dashboard</h1>
+                    <p className="text-linkedin-gray text-xs sm:text-sm">System observability</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <button
                         onClick={fetchData}
                         disabled={loading}
-                        className="p-2.5 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors text-linkedin-charcoal disabled:opacity-50"
+                        className="p-2 sm:p-2.5 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors text-linkedin-charcoal disabled:opacity-50"
                         title="Refresh Data"
                     >
-                        <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+                        <RefreshCw size={16} className={`sm:w-[18px] sm:h-[18px] ${loading ? "animate-spin" : ""}`} />
                     </button>
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 bg-linkedin-charcoal text-white text-sm font-medium rounded-lg hover:bg-black transition-colors"
+                        className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-linkedin-charcoal text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-black transition-colors"
                     >
-                        <LogOut size={16} />
+                        <LogOut size={14} className="sm:w-4 sm:h-4" />
                         Logout
                     </button>
                 </div>
