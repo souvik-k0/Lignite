@@ -58,13 +58,13 @@ export async function POST(req: Request) {
             }, { status: 429 });
         }
 
-        const { projectId } = await req.json();
+        const { projectId, keywords } = await req.json();
 
         if (!projectId) {
             return NextResponse.json({ error: "Project ID required" }, { status: 400 });
         }
 
-        // Get project name (used as niche for research)
+        // Get project name (used as fallback niche)
         const project = await db.query.projects.findFirst({
             where: and(eq(projects.id, projectId), eq(projects.userId, user.id)),
         });
@@ -74,7 +74,9 @@ export async function POST(req: Request) {
         }
 
         // Research trending topics using Gemini
-        const topics = await researchTrendingTopics(project.name, user.id);
+        // Use provided keywords or fallback to project name
+        const researchQuery = keywords || project.name;
+        const topics = await researchTrendingTopics(researchQuery, user.id);
 
         // Increment usage count after successful API call
         await incrementResearch(user.id);

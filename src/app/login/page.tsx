@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Flame, Mail, Lock, Loader2 } from "lucide-react";
+import { Flame, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -29,6 +29,9 @@ export default function LoginPage() {
             if (error) {
                 setError(error.message);
             } else {
+                // Sync user to public db and log event
+                await fetch("/api/auth/sync", { method: "POST" });
+
                 router.push("/dashboard");
                 router.refresh();
             }
@@ -40,84 +43,89 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Logo */}
+        <div className="min-h-screen bg-linkedin-page-bg flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
+                {/* Logo & Header */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl shadow-lg shadow-orange-500/25 mb-4">
-                        <Flame className="w-8 h-8 text-white" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-linkedin to-linkedin-dark rounded-xl shadow-md shadow-linkedin/20 mb-4">
+                        <Flame className="w-6 h-6 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white">Lignite</h1>
-                    <p className="text-slate-400 mt-2">AI-Powered Content Research</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+                    <p className="text-gray-500 mt-2 text-sm">Sign in to continue your research</p>
                 </div>
 
-                {/* Login Form */}
-                <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl">
-                    <h2 className="text-2xl font-semibold text-white mb-6">Welcome back</h2>
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg mb-6">
+                        {error}
+                    </div>
+                )}
 
-                    {error && (
-                        <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-6">
-                            {error}
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Email
+                        </label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-linkedin/20 focus:border-linkedin transition-all"
+                                placeholder="you@example.com"
+                                required
+                            />
                         </div>
-                    )}
+                    </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Email
-                            </label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                                    placeholder="you@example.com"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Password
                             </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
+                            <Link
+                                href="/forgot-password"
+                                className="text-xs font-medium text-linkedin hover:text-linkedin-dark hover:underline"
+                            >
+                                Forgot password?
+                            </Link>
                         </div>
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-linkedin/20 focus:border-linkedin transition-all"
+                                placeholder="••••••••"
+                                required
+                            />
+                        </div>
+                    </div>
 
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Signing in...
-                                </>
-                            ) : (
-                                "Sign in"
-                            )}
-                        </button>
-                    </form>
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-linkedin hover:bg-linkedin-dark text-white py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                    >
+                        {isLoading ? (
+                            <Loader2 className="animate-spin w-5 h-5" />
+                        ) : (
+                            <>
+                                Sign In <ArrowRight size={18} />
+                            </>
+                        )}
+                    </button>
+                </form>
 
-                    <p className="text-slate-400 text-center mt-6">
-                        Don&apos;t have an account?{" "}
-                        <Link href="/register" className="text-orange-400 hover:text-orange-300 font-medium">
-                            Sign up
-                        </Link>
-                    </p>
+                {/* Footer */}
+                <div className="mt-8 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">
+                    Don't have an account?{" "}
+                    <Link href="/register" className="font-medium text-linkedin hover:text-linkedin-dark hover:underline">
+                        Create an account
+                    </Link>
                 </div>
             </div>
         </div>

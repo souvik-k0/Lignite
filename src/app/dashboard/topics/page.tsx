@@ -11,6 +11,7 @@ import {
     Loader2,
     RefreshCw,
     AlertCircle,
+    Search,
 } from "lucide-react";
 
 interface Topic {
@@ -30,6 +31,8 @@ export default function TopicsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [showResearchDialog, setShowResearchDialog] = useState(false);
+    const [keywords, setKeywords] = useState("");
 
     const fetchTopics = async () => {
         if (!projectId) return;
@@ -48,14 +51,23 @@ export default function TopicsPage() {
         fetchTopics();
     }, [projectId]);
 
-    const handleResearch = async () => {
+    const handleResearchClick = () => {
+        setShowResearchDialog(true);
+        setKeywords(""); // Reset keywords on open
+    };
+
+    const handleResearchSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!projectId) return;
+
+        setShowResearchDialog(false);
         setIsProcessing(true);
+
         try {
             const res = await fetch("/api/topics", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ projectId }),
+                body: JSON.stringify({ projectId, keywords }),
             });
             if (res.ok) {
                 await fetchTopics();
@@ -153,7 +165,7 @@ export default function TopicsPage() {
                 </div>
                 <div className="ml-auto flex items-center">
                     <button
-                        onClick={handleResearch}
+                        onClick={handleResearchClick}
                         disabled={isProcessing}
                         className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-linkedin text-white rounded-lg hover:bg-linkedin-dark text-sm font-medium transition-colors disabled:opacity-50"
                     >
@@ -271,6 +283,65 @@ export default function TopicsPage() {
                     </tbody>
                 </table>
             </div>
-        </div>
+
+
+            {/* Research Dialog */}
+            {
+                showResearchDialog && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-800">New Research Run</h3>
+                                <button
+                                    onClick={() => setShowResearchDialog(false)}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleResearchSubmit}>
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Target Keywords
+                                    </label>
+                                    <p className="text-xs text-gray-500 mb-2">
+                                        Enter specific topics, trends, or keywords to guide the AI research.
+                                    </p>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                                        <input
+                                            type="text"
+                                            value={keywords}
+                                            onChange={(e) => setKeywords(e.target.value)}
+                                            placeholder="e.g. AI Agents, SaaS Marketing, Remote Work 2025"
+                                            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-linkedin"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowResearchDialog(false)}
+                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!keywords.trim()}
+                                        className="px-4 py-2 bg-linkedin text-white rounded-lg hover:bg-linkedin-dark transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Start Research
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }

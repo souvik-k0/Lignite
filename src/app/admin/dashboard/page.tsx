@@ -13,7 +13,8 @@ import {
     LogOut,
     User,
     ChevronDown,
-    ChevronRight
+    ChevronRight,
+    Users
 } from "lucide-react";
 
 type LogActivity = {
@@ -45,10 +46,18 @@ type Feedback = {
     } | null;
 };
 
+type AppUser = {
+    id: string;
+    email: string;
+    name: string | null;
+    createdAt: string;
+};
+
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<"logs" | "feedback">("logs");
+    const [activeTab, setActiveTab] = useState<"logs" | "feedback" | "users">("logs");
     const [userLogs, setUserLogs] = useState<UserLog[]>([]);
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+    const [users, setUsers] = useState<AppUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
@@ -58,9 +67,10 @@ export default function AdminDashboard() {
         setLoading(true);
         try {
             const timestamp = Date.now();
-            const [logsRes, fbRes] = await Promise.all([
+            const [logsRes, fbRes, usersRes] = await Promise.all([
                 fetch(`/api/developer/logs?grouped=true&_t=${timestamp}`),
-                fetch(`/api/developer/feedback?_t=${timestamp}`)
+                fetch(`/api/developer/feedback?_t=${timestamp}`),
+                fetch(`/api/developer/users?_t=${timestamp}`)
             ]);
 
             if (logsRes.ok) {
@@ -72,6 +82,10 @@ export default function AdminDashboard() {
             if (fbRes.ok) {
                 const fbData = await fbRes.json();
                 setFeedbacks(fbData);
+            }
+            if (usersRes.ok) {
+                const usersData = await usersRes.json();
+                setUsers(usersData);
             }
         } catch (error) {
             console.error("Failed to fetch dashboard data:", error);
@@ -238,6 +252,20 @@ export default function AdminDashboard() {
                             {openCount}
                         </span>
                     )}
+
+                </button>
+                <button
+                    onClick={() => setActiveTab("users")}
+                    className={`py-3 sm:py-4 px-4 sm:px-6 font-semibold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === "users"
+                        ? "border-linkedin-charcoal text-linkedin-charcoal"
+                        : "border-transparent text-linkedin-gray hover:text-linkedin-charcoal"
+                        }`}
+                >
+                    <Users size={16} className="sm:w-[18px] sm:h-[18px]" />
+                    Users
+                    <span className="bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0.5 rounded-full">
+                        {users.length}
+                    </span>
                 </button>
             </nav>
 
@@ -335,6 +363,47 @@ export default function AdminDashboard() {
                                 );
                             })
                         )}
+                    </div>
+                ) : activeTab === "users" ? (
+                    <div className="max-w-5xl mx-auto">
+                        <div className="bg-white rounded-xl border shadow-sm overflow-hidden overflow-x-auto">
+                            <table className="w-full text-left text-sm min-w-[600px]">
+                                <thead className="bg-gray-50 border-b">
+                                    <tr>
+                                        <th className="px-6 py-4 font-semibold text-gray-900">Name</th>
+                                        <th className="px-6 py-4 font-semibold text-gray-900">Email</th>
+                                        <th className="px-6 py-4 font-semibold text-gray-900">Joined</th>
+                                        <th className="px-6 py-4 font-semibold text-gray-900">ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {users.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                                                No users found.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        users.map((user) => (
+                                            <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-gray-900">{user.name || "Unknown"}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600">
+                                                    {user.email}
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-500">
+                                                    {new Date(user.createdAt).toLocaleDateString()} {new Date(user.createdAt).toLocaleTimeString()}
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-400 font-mono text-xs">
+                                                    {user.id}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 ) : (
                     <div className="max-w-3xl mx-auto space-y-4">
