@@ -39,9 +39,16 @@ export default function TopicsPage() {
         try {
             const res = await fetch(`/api/topics?project=${projectId}`);
             const data = await res.json();
-            setTopics(data);
+
+            if (Array.isArray(data)) {
+                setTopics(data);
+            } else {
+                console.error("Fetched topics data is not an array:", data);
+                setTopics([]);
+            }
         } catch (error) {
             console.error("Failed to fetch topics:", error);
+            setTopics([]);
         } finally {
             setIsLoading(false);
         }
@@ -69,8 +76,17 @@ export default function TopicsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ projectId, keywords }),
             });
+
+            const data = await res.json();
+
             if (res.ok) {
                 await fetchTopics();
+            } else {
+                if (res.status === 429) {
+                    alert(data.message || "Rate limit exceeded");
+                } else {
+                    console.error("Research failed:", data.error);
+                }
             }
         } catch (error) {
             console.error("Research failed:", error);
@@ -87,8 +103,16 @@ export default function TopicsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: "APPROVED", generateContent: true }),
             });
+
             if (res.ok) {
                 await fetchTopics();
+            } else {
+                const data = await res.json();
+                if (res.status === 429) {
+                    alert(data.message || "Rate limit exceeded");
+                } else {
+                    console.error("Approve failed:", data.error);
+                }
             }
         } catch (error) {
             console.error("Approve failed:", error);
@@ -180,8 +204,8 @@ export default function TopicsPage() {
                 </div>
             </div>
 
-            {/* Grid */}
-            <div className="flex-1 overflow-auto">
+            {/* Grid - Desktop */}
+            <div className="hidden md:block flex-1 overflow-auto">
                 <table className="w-full min-w-[600px] border-collapse text-sm">
                     <thead>
                         <tr className="bg-gray-50">
@@ -273,15 +297,87 @@ export default function TopicsPage() {
                                 </td>
                             </tr>
                         ))}
-                        {topics.length === 0 && (
-                            <tr>
-                                <td colSpan={5} className="border border-gray-200 p-8 text-center text-gray-400">
-                                    No topics yet. Click <strong>Research Topics</strong> to find trending topics.
-                                </td>
-                            </tr>
-                        )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* List - Mobile */}
+            <div className="md:hidden flex-1 overflow-auto p-4 space-y-4 bg-gray-50">
+                {topics.map((topic, index) => (
+                    <div key={topic.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col gap-3">
+                        <div className="flex justify-between items-start gap-4">
+                            <span className="text-sm font-medium text-gray-800 leading-snug">
+                                {topic.topic}
+                            </span>
+                            <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getStatusStyle(
+                                    topic.status
+                                )}`}
+                            >
+                                {topic.status}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                            {topic.sourceUrl ? (
+                                <a
+                                    href={topic.sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-blue-600 hover:underline"
+                                >
+                                    <ExternalLink size={12} />
+                                    {topic.sourceTitle || "Source Link"}
+                                </a>
+                            ) : (
+                                <span className="text-gray-400">AI Generated</span>
+                            )}
+                        </div>
+
+                        {/* Mobile Actions */}
+                        <div className="flex gap-2 pt-2 border-t border-gray-100">
+                            {topic.status === "PENDING" && (
+                                <>
+                                    <button
+                                        onClick={() => handleApprove(topic.id)}
+                                        disabled={processingId === topic.id}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-md text-sm font-medium disabled:opacity-50"
+                                    >
+                                        {processingId === topic.id ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                        ) : (
+                                            <Check size={14} />
+                                        )}
+                                        Approve
+                                    </button>
+                                    <button
+                                        onClick={() => handleReject(topic.id)}
+                                        disabled={processingId === topic.id}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-md text-sm font-medium disabled:opacity-50"
+                                    >
+                                        <X size={14} />
+                                        Reject
+                                    </button>
+                                </>
+                            )}
+                            {topic.status === "GENERATED" && (
+                                <button
+                                    onClick={() => router.push(`/dashboard/content?project=${projectId}`)}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md text-sm font-medium"
+                                >
+                                    <Wand2 size={14} /> View Content
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+
+                {topics.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <p className="text-gray-500 mb-2">No topics yet</p>
+                        <p className="text-sm text-gray-400">Tap "Research" to get started</p>
+                    </div>
+                )}
             </div>
 
 

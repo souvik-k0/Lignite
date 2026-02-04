@@ -14,7 +14,7 @@ export interface ResearchResult {
  * Research trending topics using Gemini AI
  */
 export async function researchTrendingTopics(niche: string, userId?: string): Promise<ResearchResult[]> {
-    const model = "gemini-2.0-flash-exp";
+    const model = "gemini-2.5-flash";
 
     const prompt = `
     Find 5 currently trending or highly relevant topics related to "${niche}" for today.
@@ -92,7 +92,7 @@ export async function researchTrendingTopics(niche: string, userId?: string): Pr
  * Optimized for LinkedIn 2025 Algorithm
  */
 export async function generateLinkedInPost(topic: string, niche: string, userId?: string): Promise<string> {
-    const model = "gemini-2.0-flash-exp";
+    const model = "gemini-2.5-flash";
 
     const prompt = `
 You are an expert LinkedIn copywriter specializing in the "${niche}" industry.
