@@ -6,9 +6,13 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { password } = body;
 
-        // In a real app, use an env variable. For now, hardcode or fallback.
-        // User can set ADMIN_PASSWORD in .env later.
-        const VALID_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+        // ADMIN_PASSWORD must be set in environment variables
+        const VALID_PASSWORD = process.env.ADMIN_PASSWORD;
+
+        if (!VALID_PASSWORD) {
+            console.error("ADMIN_PASSWORD environment variable is not set");
+            return new NextResponse("Server configuration error", { status: 500 });
+        }
 
         if (password !== VALID_PASSWORD) {
             return new NextResponse("Invalid password", { status: 401 });

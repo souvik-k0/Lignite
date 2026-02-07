@@ -37,12 +37,24 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    // Protect routes - Example: Redirect unauthenticated users to login
-    // You can customize this logic based on your route structure
+    // Protect routes
     const path = request.nextUrl.pathname;
-    if (!user && (path.startsWith("/dashboard") || path.startsWith("/admin"))) {
-        // Allow admin login access
+
+    // Admin routes use separate authentication (admin_session cookie)
+    if (path.startsWith("/admin")) {
+        // Allow admin login page without auth
         if (path === "/admin/login") return response;
+
+        // Check for admin session cookie
+        const adminSession = request.cookies.get("admin_session");
+        if (!adminSession || adminSession.value !== "true") {
+            return NextResponse.redirect(new URL("/admin/login", request.url));
+        }
+        return response;
+    }
+
+    // Dashboard routes require Supabase user authentication
+    if (!user && path.startsWith("/dashboard")) {
         return NextResponse.redirect(new URL("/login", request.url));
     }
 
