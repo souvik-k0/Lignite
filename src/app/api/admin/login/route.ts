@@ -17,9 +17,10 @@ export async function POST(req: Request) {
         const cookieStore = await cookies();
 
         // Set a secure cookie
+        // Note: secure is false to allow HTTP deployments (e.g., Coolify without SSL)
         cookieStore.set("admin_session", "true", {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: false,
             sameSite: "strict",
             path: "/",
             maxAge: 60 * 60 * 24, // 1 day
